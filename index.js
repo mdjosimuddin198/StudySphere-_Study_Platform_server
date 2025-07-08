@@ -3,7 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const jwt = require("jsonwebtoken");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const port = process.env.PORT || 5000;
 const app = express();
 
@@ -67,6 +67,34 @@ async function run() {
       }
       const user = req.body;
       const result = await usersCollection.insertOne(user);
+      res.send(result);
+    });
+
+    // Example: GET /tutors/pending
+
+    app.get("/tutors/pending", async (req, res) => {
+      try {
+        const pendingTutors = await tutorCollection
+          .find({ status: "pending" })
+          .toArray();
+        res.status(200).send(pendingTutors);
+      } catch (error) {
+        console.error("Error fetching pending tutors:", error);
+        res.status(500).send({ message: "Failed to fetch pending tutors" });
+      }
+    });
+
+    // accept or reajct tutor
+    // PATCH: Update tutor status (approve/reject)
+    app.patch("/tutors/status/:id", async (req, res) => {
+      const { id } = req.params;
+      const { status } = req.body;
+
+      const result = await tutorCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { status } }
+      );
+
       res.send(result);
     });
 
