@@ -69,8 +69,15 @@ async function run() {
       const result = await usersCollection.insertOne(user);
       res.send(result);
     });
+    // get approvedTutors
+    app.get("/tutors/approved", async (req, res) => {
+      const approvedTutors = await tutorCollection
+        .find({ status: "approved" })
+        .toArray();
+      res.send(approvedTutors);
+    });
 
-    // Example: GET /tutors/pending
+    // GET /tutors/pending
 
     app.get("/tutors/pending", async (req, res) => {
       try {
