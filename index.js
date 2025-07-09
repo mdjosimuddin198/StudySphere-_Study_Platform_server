@@ -69,6 +69,48 @@ async function run() {
       const result = await usersCollection.insertOne(user);
       res.send(result);
     });
+
+    app.get("/users/search", async (req, res) => {
+      const { email } = req.query;
+      if (!email) {
+        return res.status(400).send({ message: "Email query is required" });
+      }
+
+      const regex = new RegExp(email, "i"); // case insensitive
+      const users = await usersCollection
+        .find({ email: { $regex: regex } })
+        // .project({ email: 1, createdAt: 1, role: 1 }) // only necessary fields
+        .limit(10) // limit result count
+        .toArray();
+
+      res.send(users);
+    });
+
+    // Update user role (make admin or remove admin)
+    app.patch("/users/role/:id", async (req, res) => {
+      const { id } = req.params;
+      const { role } = req.body; // expected: 'admin' or 'student' (or 'mentor')
+
+      if (!role || !["admin", "user", "tutor"].includes(role)) {
+        return res.status(400).send({ message: "Invalid role" });
+      }
+
+      if (!ObjectId.isValid(id)) {
+        return res.status(400).send({ message: "Invalid user id" });
+      }
+
+      const result = await usersCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { role } }
+      );
+
+      if (result.modifiedCount > 0) {
+        res.send({ message: `User role updated to ${role}` });
+      } else {
+        res.status(404).send({ message: "User not found or role unchanged" });
+      }
+    });
+
     // get approvedTutors
     app.get("/tutors/approved", async (req, res) => {
       const approvedTutors = await tutorCollection
