@@ -49,6 +49,25 @@ async function run() {
     const usersCollection = database.collection("user");
     const tutorCollection = database.collection("tutors");
 
+    // get user role
+    app.get("/users/role/:email", async (req, res) => {
+      const email = req.params.email;
+
+      try {
+        const user = await usersCollection.findOne({ email });
+
+        if (!user) {
+          return res.status(404).send({ message: "User not found" });
+        }
+
+        res.send({ role: user.role || "user" }); // default role: user
+      } catch (error) {
+        console.error("Error fetching role:", error);
+        res.status(500).send({ message: "Internal Server Error" });
+      }
+    });
+
+    // get all users
     app.post("/users", async (req, res) => {
       const email = req.body.email;
       const userExists = await usersCollection.findOne({ email });
@@ -70,6 +89,7 @@ async function run() {
       res.send(result);
     });
 
+    // search user by email or name
     app.get("/users/search", async (req, res) => {
       const { email } = req.query;
       if (!email) {
@@ -166,6 +186,7 @@ async function run() {
       }
     });
 
+    // post a tutor
     app.post("/tutors", async (req, res) => {
       const tutorInfo = req.body;
       const result = await tutorCollection.insertOne(tutorInfo);
@@ -188,6 +209,7 @@ async function run() {
       res.send({ message: "successfull" });
     });
 
+    // logout user and clear cookie
     app.post("/api/logout", (req, res) => {
       res.clearCookie("AccessToken", {
         httpOnly: true,
