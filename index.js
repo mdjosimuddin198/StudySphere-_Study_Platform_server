@@ -49,8 +49,24 @@ async function run() {
     const usersCollection = database.collection("user");
     const tutorCollection = database.collection("tutors");
 
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded?.userInfo;
+
+      if (!email) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+
+      const user = await usersCollection.findOne({ email });
+
+      if (!user || user.role !== "admin") {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+
+      next();
+    };
+
     // get user role
-    app.get("/users/role/:email", async (req, res) => {
+    app.get("/users/role/:email", validToken, async (req, res) => {
       const email = req.params.email;
 
       try {
@@ -90,7 +106,7 @@ async function run() {
     });
 
     // search user by email or name
-    app.get("/users/search", async (req, res) => {
+    app.get("/users/search", validToken, verifyAdmin, async (req, res) => {
       const { email } = req.query;
       if (!email) {
         return res.status(400).send({ message: "Email query is required" });
@@ -107,7 +123,7 @@ async function run() {
     });
 
     // Update user role (make admin or remove admin)
-    app.patch("/users/role/:id", async (req, res) => {
+    app.patch("/users/role/:id", validToken, verifyAdmin, async (req, res) => {
       const { id } = req.params;
       const { role } = req.body; // expected: 'admin' or 'student' (or 'mentor')
 
@@ -141,7 +157,7 @@ async function run() {
 
     // GET /tutors/pending
 
-    app.get("/tutors/pending", async (req, res) => {
+    app.get("/tutors/pending", validToken, verifyAdmin, async (req, res) => {
       try {
         const pendingTutors = await tutorCollection
           .find({ status: "pending" })
@@ -155,7 +171,7 @@ async function run() {
 
     // accept or reajct tutor
     // PATCH: Update tutor status (approve/reject)
-    app.patch("/tutors/status/:id", async (req, res) => {
+    app.patch("/tutors/status/:id", validToken, async (req, res) => {
       const { id } = req.params;
       const { status, email } = req.body;
 
@@ -187,7 +203,7 @@ async function run() {
     });
 
     // post a tutor
-    app.post("/tutors", async (req, res) => {
+    app.post("/tutors", validToken, async (req, res) => {
       const tutorInfo = req.body;
       const result = await tutorCollection.insertOne(tutorInfo);
       res.send(result);
