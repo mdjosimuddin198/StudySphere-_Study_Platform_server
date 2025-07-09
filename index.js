@@ -95,14 +95,33 @@ async function run() {
     // PATCH: Update tutor status (approve/reject)
     app.patch("/tutors/status/:id", async (req, res) => {
       const { id } = req.params;
-      const { status } = req.body;
+      const { status, email } = req.body;
 
-      const result = await tutorCollection.updateOne(
-        { _id: new ObjectId(id) },
-        { $set: { status } }
-      );
+      const query = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: { status },
+      };
 
-      res.send(result);
+      try {
+        const result = await tutorCollection.updateOne(query, updateDoc);
+
+        if (status === "approved") {
+          const userQuery = { email };
+          const userUpdateDoc = {
+            $set: { role: "tutor" },
+          };
+          const roleResult = await usersCollection.updateOne(
+            userQuery,
+            userUpdateDoc
+          );
+          console.log("Role updated:", roleResult.modifiedCount);
+        }
+
+        res.send(result);
+      } catch (error) {
+        console.error("Error updating tutor:", error);
+        res.status(500).send({ message: "Failed to update tutor status" });
+      }
     });
 
     app.post("/tutors", async (req, res) => {
