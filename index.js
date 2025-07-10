@@ -48,6 +48,61 @@ async function run() {
     const database = client.db("StudySphereDB");
     const usersCollection = database.collection("user");
     const tutorCollection = database.collection("tutors");
+    const studySessionCollection = database.collection("studySession");
+
+    app.post("/study_session", async (req, res) => {
+      const studySessionData = req.body;
+      const result = await studySessionCollection.insertOne(studySessionData);
+      res.send(result);
+    });
+
+    app.get("/study_session", async (req, res) => {
+      try {
+        const { status } = req.query;
+
+        let query = {};
+        if (status === "pending") {
+          query.status = "pending";
+        } else if (status === "approved") {
+          query.status = "approved";
+        }
+
+        const sessions = await studySessionCollection.find(query).toArray();
+        res.send(sessions);
+      } catch (error) {
+        console.error("Failed to fetch study sessions:", error);
+        res.status(500).send({ error: "Internal Server Error" });
+      }
+    });
+
+    app.patch("/study_session/:id/status", async (req, res) => {
+      const { id } = req.params;
+      const { status, registrationFee } = req.body;
+
+      if (!["approved", "rejected"].includes(status)) {
+        return res.status(400).json({ message: "Invalid status" });
+      }
+
+      const updateFields = { status };
+      if (registrationFee !== undefined) {
+        updateFields.registrationFee = Number(registrationFee);
+      }
+
+      try {
+        const result = await studySessionCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: updateFields }
+        );
+
+        if (result.modifiedCount > 0) {
+          res.send({ message: "Status and fee updated" });
+        } else {
+          res.status(404).send({ message: "Not found or already updated" });
+        }
+      } catch (error) {
+        res.status(500).send({ message: "Server error", error });
+      }
+    });
 
     const verifyAdmin = async (req, res, next) => {
       const email = req.decoded?.userInfo;
