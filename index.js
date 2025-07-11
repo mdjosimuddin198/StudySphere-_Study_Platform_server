@@ -49,6 +49,42 @@ async function run() {
     const usersCollection = database.collection("user");
     const tutorCollection = database.collection("tutors");
     const studySessionCollection = database.collection("studySession");
+    const bookedSessionsCollectin = database.collection("bookedSessions");
+    const reviewsCollection = database.collection("reviews");
+
+    app.post("/bookedSessions", async (req, res) => {
+      const bookedData = req.body;
+      const { studentEmail, sessionId } = req.body;
+
+      // console.log(studentEmail, sessionId);
+      const existingBooking = await bookedSessionsCollectin.findOne({
+        sessionId,
+        studentEmail,
+      });
+      if (existingBooking) {
+        return res
+          .status(400)
+          .send({ message: "You have already booked this session." });
+      }
+
+      // console.log(bookedData);
+      const result = await bookedSessionsCollectin.insertOne(bookedData);
+      res.send(result);
+    });
+
+    app.post("/reviews", async (req, res) => {
+      const reviewsData = req.body;
+      const result = await reviewsCollection.insertOne(reviewsData);
+      res.send(result);
+    });
+
+    app.get("/reviews", async (req, res) => {
+      const sessionId = req.query.sessionId;
+      const result = await reviewsCollection
+        .find({ sessionId: sessionId })
+        .toArray();
+      res.send(result);
+    });
 
     app.post("/study_session", async (req, res) => {
       const studySessionData = req.body;
@@ -73,6 +109,13 @@ async function run() {
         console.error("Failed to fetch study sessions:", error);
         res.status(500).send({ error: "Internal Server Error" });
       }
+    });
+
+    app.get("/study_session/:id", async (req, res) => {
+      const { id } = req.params;
+      const quary = { _id: new ObjectId(id) };
+      const result = await studySessionCollection.findOne(quary);
+      res.send(result);
     });
 
     app.patch("/study_session/:id/status", async (req, res) => {
@@ -238,14 +281,19 @@ async function run() {
       try {
         const result = await tutorCollection.updateOne(query, updateDoc);
 
+        const userQuery = { email };
+        let roleUpdateDoc;
+
         if (status === "approved") {
-          const userQuery = { email };
-          const userUpdateDoc = {
-            $set: { role: "tutor" },
-          };
+          roleUpdateDoc = { $set: { role: "tutor" } };
+        } else if (status === "rejected") {
+          roleUpdateDoc = { $set: { role: "user" } }; // রিজেক্ট হলে ইউজারে রোল ফেরত দাও
+        }
+
+        if (roleUpdateDoc) {
           const roleResult = await usersCollection.updateOne(
             userQuery,
-            userUpdateDoc
+            roleUpdateDoc
           );
           console.log("Role updated:", roleResult.modifiedCount);
         }
