@@ -72,6 +72,26 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/bookedSessions", async (req, res) => {
+      try {
+        const { email } = req.query;
+
+        if (!email) {
+          return res.status(400).send({ error: "Email is required" });
+        }
+
+        const query = { studentEmail: email }; // ধরে নিচ্ছি studentEmail ফিল্ডে ইউজার ইমেইল থাকে
+        const bookedSessions = await bookedSessionsCollectin
+          .find(query)
+          .toArray();
+
+        res.send(bookedSessions);
+      } catch (error) {
+        console.error("Failed to fetch booked sessions:", error);
+        res.status(500).send({ error: "Internal Server Error" });
+      }
+    });
+
     app.post("/reviews", async (req, res) => {
       const reviewsData = req.body;
       const result = await reviewsCollection.insertOne(reviewsData);
@@ -94,7 +114,7 @@ async function run() {
 
     app.get("/study_session", async (req, res) => {
       try {
-        const { status } = req.query;
+        const { status, limit } = req.query;
 
         let query = {};
         if (status === "pending") {
@@ -103,7 +123,13 @@ async function run() {
           query.status = "approved";
         }
 
-        const sessions = await studySessionCollection.find(query).toArray();
+        const limitValue = parseInt(limit) || 0; // limit না থাকলে সব দেখাবে
+
+        const sessions = await studySessionCollection
+          .find(query)
+          .limit(limitValue)
+          .toArray();
+
         res.send(sessions);
       } catch (error) {
         console.error("Failed to fetch study sessions:", error);
