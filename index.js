@@ -16,6 +16,8 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
+const stripe = require("stripe")(process.env.PAYMENT_SECRET);
+
 const validToken = (req, res, next) => {
   const token = req?.cookies?.AccessToken;
   // console.log("i am inside in logger mideleware", token);
@@ -51,25 +53,108 @@ async function run() {
     const studySessionCollection = database.collection("studySession");
     const bookedSessionsCollectin = database.collection("bookedSessions");
     const reviewsCollection = database.collection("reviews");
+    const paymentsCollection = database.collection("payments");
+
+    // POST: Record payment and update parcel status
+
+    app.post("/payments", async (req, res) => {
+      try {
+        const { id, email, amount, paymentMethod, transactionId } = req.body;
+
+        // Optional: validate input
+        if (!id || !email) {
+          return res.status(400).send({ message: "Missing required fields" });
+        }
+
+        // ✅ Update bookedSessions status to "paid"
+        const updateBookedSession = await bookedSessionsCollectin.updateOne(
+          { sessionId: id, studentEmail: email },
+          { $set: { paid_status: "paid" } }
+        );
+
+        if (updateBookedSession.modifiedCount === 0) {
+          return res
+            .status(404)
+            .send({ message: "Booking not found or already paid" });
+        }
+
+        // ✅ Save payment record
+        const paymentDoc = {
+          id,
+          email,
+          amount,
+          paymentMethod,
+          transactionId,
+          paid_at: new Date(),
+          paid_at_string: new Date().toISOString(),
+        };
+
+        const paymentResult = await paymentsCollection.insertOne(paymentDoc);
+
+        res.status(201).send({
+          message: "Payment recorded and session marked as paid",
+          insertedId: paymentResult.insertedId,
+        });
+      } catch (error) {
+        console.error("Payment error:", error);
+        res.status(500).send({ message: "Failed to process payment" });
+      }
+    });
+
+    app.post("/create-payment-intent", async (req, res) => {
+      const { amount } = req.body; // Amount should be in cents
+
+      try {
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount,
+          currency: "usd",
+          payment_method_types: ["card"],
+        });
+
+        res.send({
+          clientSecret: paymentIntent.client_secret,
+        });
+      } catch (error) {
+        res.status(500).send({ error: error.message });
+      }
+    });
 
     app.post("/bookedSessions", async (req, res) => {
-      const bookedData = req.body;
-      const { studentEmail, sessionId } = req.body;
+      try {
+        const { studentEmail, sessionId, tutorEmail, sessionTitle, bookedAt } =
+          req.body;
 
-      // console.log(studentEmail, sessionId);
-      const existingBooking = await bookedSessionsCollectin.findOne({
-        sessionId,
-        studentEmail,
-      });
-      if (existingBooking) {
-        return res
-          .status(400)
-          .send({ message: "You have already booked this session." });
+        if (!studentEmail || !sessionId) {
+          return res
+            .status(400)
+            .send({ message: "studentEmail and sessionId are required" });
+        }
+
+        const existingBooking = await bookedSessionsCollectin.findOne({
+          sessionId,
+          studentEmail,
+        });
+
+        if (existingBooking) {
+          return res
+            .status(400)
+            .send({ message: "You have already booked this session." });
+        }
+
+        const bookedData = {
+          studentEmail,
+          sessionId,
+          tutorEmail,
+          sessionTitle,
+          bookedAt,
+        };
+
+        const result = await bookedSessionsCollectin.insertOne(bookedData);
+        res.status(201).send(result);
+      } catch (error) {
+        console.error("Booking error:", error);
+        res.status(500).send({ message: "Failed to book session" });
       }
-
-      // console.log(bookedData);
-      const result = await bookedSessionsCollectin.insertOne(bookedData);
-      res.send(result);
     });
 
     app.get("/bookedSessions", async (req, res) => {
