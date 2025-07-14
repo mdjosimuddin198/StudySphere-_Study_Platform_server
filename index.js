@@ -55,8 +55,35 @@ async function run() {
     const reviewsCollection = database.collection("reviews");
     const paymentsCollection = database.collection("payments");
     const materialsCollection = database.collection("material");
+    const notesCollection = database.collection("note");
 
-    // POST: Record payment and update parcel status
+    app.post("/notes", async (req, res) => {
+      const note = req.body;
+      const result = await notesCollection.insertOne(note);
+      res.send(result);
+    });
+
+    app.get("/notes", async (req, res) => {
+      const email = req.query.email;
+      const notes = await notesCollection.find({ email }).toArray();
+      res.send(notes);
+    });
+
+    app.put("/notes/:id", async (req, res) => {
+      const id = req.params.id;
+      const updated = req.body;
+      const result = await notesCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: updated }
+      );
+      res.send(result);
+    });
+
+    app.delete("/notes/:id", async (req, res) => {
+      const id = req.params.id;
+      const result = await notesCollection.deleteOne({ _id: new ObjectId(id) });
+      res.send(result);
+    });
 
     app.post("/materials", async (req, res) => {
       const material = req.body;
