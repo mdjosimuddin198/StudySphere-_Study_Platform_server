@@ -54,8 +54,21 @@ async function run() {
     const bookedSessionsCollectin = database.collection("bookedSessions");
     const reviewsCollection = database.collection("reviews");
     const paymentsCollection = database.collection("payments");
+    const materialsCollection = database.collection("material");
 
     // POST: Record payment and update parcel status
+
+    app.post("/materials", async (req, res) => {
+      const material = req.body;
+      const result = await materialsCollection.insertOne(material);
+      res.send(result);
+    });
+
+    app.get("/materials", async (req, res) => {
+      const sessionId = req.query.sessionId;
+      const materials = await materialsCollection.find({ sessionId }).toArray();
+      res.send(materials);
+    });
 
     app.post("/payments", async (req, res) => {
       try {
