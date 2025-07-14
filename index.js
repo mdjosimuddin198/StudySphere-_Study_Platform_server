@@ -327,6 +327,11 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/users", validToken, verifyAdmin, async (req, res) => {
+      const result = await usersCollection.find().toArray();
+      res.send(result);
+    });
+
     // search user by email or name
     app.get("/users/search", validToken, verifyAdmin, async (req, res) => {
       const { email } = req.query;
