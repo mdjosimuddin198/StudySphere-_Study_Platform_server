@@ -63,13 +63,13 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/notes", async (req, res) => {
+    app.get("/notes", validToken, async (req, res) => {
       const email = req.query.email;
       const notes = await notesCollection.find({ email }).toArray();
       res.send(notes);
     });
 
-    app.put("/notes/:id", async (req, res) => {
+    app.put("/notes/:id", validToken, async (req, res) => {
       const id = req.params.id;
       const updated = req.body;
       const result = await notesCollection.updateOne(
@@ -79,25 +79,25 @@ async function run() {
       res.send(result);
     });
 
-    app.delete("/notes/:id", async (req, res) => {
+    app.delete("/notes/:id", validToken, async (req, res) => {
       const id = req.params.id;
       const result = await notesCollection.deleteOne({ _id: new ObjectId(id) });
       res.send(result);
     });
 
-    app.post("/materials", async (req, res) => {
+    app.post("/materials", validToken, async (req, res) => {
       const material = req.body;
       const result = await materialsCollection.insertOne(material);
       res.send(result);
     });
 
-    app.get("/materials", async (req, res) => {
+    app.get("/materials", validToken, async (req, res) => {
       const sessionId = req.query.sessionId;
       const materials = await materialsCollection.find({ sessionId }).toArray();
       res.send(materials);
     });
 
-    app.post("/payments", async (req, res) => {
+    app.post("/payments", validToken, async (req, res) => {
       try {
         const { id, email, amount, paymentMethod, transactionId } = req.body;
 
@@ -141,7 +141,7 @@ async function run() {
       }
     });
 
-    app.post("/create-payment-intent", async (req, res) => {
+    app.post("/create-payment-intent", validToken, async (req, res) => {
       const { amount } = req.body; // Amount should be in cents
 
       try {
