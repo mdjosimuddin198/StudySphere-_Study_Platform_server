@@ -269,6 +269,27 @@ async function run() {
       res.send(result);
     });
 
+    app.delete("/study_session/:id", async (req, res) => {
+      const id = req.params.id;
+
+      try {
+        const result = await studySessionCollection.deleteOne({
+          _id: new ObjectId(id),
+        });
+
+        if (result.deletedCount === 1) {
+          res.send({ success: true, message: "Session deleted successfully" });
+        } else {
+          res
+            .status(404)
+            .send({ success: false, message: "Session not found" });
+        }
+      } catch (error) {
+        console.error("Delete error:", error);
+        res.status(500).send({ success: false, message: "Server error" });
+      }
+    });
+
     app.patch("/study_session/:id/status", async (req, res) => {
       const { id } = req.params;
       const { status, registrationFee } = req.body;
