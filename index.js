@@ -9,7 +9,7 @@ const app = express();
 // https://simple-firebase-authenti-d1f36.firebaseapp.com
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: ["https://simple-firebase-authenti-d1f36.firebaseapp.com"],
     credentials: true,
   })
 );
