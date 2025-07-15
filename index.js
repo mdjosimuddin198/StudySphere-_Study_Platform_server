@@ -6,7 +6,7 @@ const jwt = require("jsonwebtoken");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const port = process.env.PORT || 5000;
 const app = express();
-
+// https://simple-firebase-authenti-d1f36.firebaseapp.com
 app.use(
   cors({
     origin: ["http://localhost:5173"],
@@ -298,6 +298,19 @@ async function run() {
       }
     });
 
+    app.patch("/study_session/resubmit/:id", async (req, res) => {
+      const id = req.params.id;
+      try {
+        const result = await studySessionCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: { status: "pending" } }
+        );
+        res.send(result);
+      } catch (err) {
+        res.status(500).send({ message: "Failed to resubmit session." });
+      }
+    });
+
     const verifyAdmin = async (req, res, next) => {
       const email = req.decoded?.userInfo;
 
@@ -451,7 +464,7 @@ async function run() {
             userQuery,
             roleUpdateDoc
           );
-          console.log("Role updated:", roleResult.modifiedCount);
+          // console.log("Role updated:", roleResult.modifiedCount);
         }
 
         res.send(result);
@@ -477,8 +490,8 @@ async function run() {
       });
       res.cookie("AccessToken", token, {
         httpOnly: true,
-        secure: false,
-        sameSite: "lax",
+        secure: true,
+        sameSite: "none",
       });
 
       res.send({ message: "successfull" });
@@ -497,10 +510,10 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+    // await client.db("admin").command({ ping: 1 });
+    // console.log(
+    //   "Pinged your deployment. You successfully connected to MongoDB!"
+    // );
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
