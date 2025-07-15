@@ -292,7 +292,7 @@ async function run() {
 
     app.patch("/study_session/:id/status", async (req, res) => {
       const { id } = req.params;
-      const { status, registrationFee } = req.body;
+      const { status, registrationFee, feedback } = req.body; // feedback যুক্ত করো
 
       if (!["approved", "rejected"].includes(status)) {
         return res.status(400).json({ message: "Invalid status" });
@@ -302,6 +302,9 @@ async function run() {
       if (registrationFee !== undefined) {
         updateFields.registrationFee = Number(registrationFee);
       }
+      if (feedback !== undefined) {
+        updateFields.feedback = feedback; // feedback যুক্ত করো
+      }
 
       try {
         const result = await studySessionCollection.updateOne(
@@ -310,7 +313,7 @@ async function run() {
         );
 
         if (result.modifiedCount > 0) {
-          res.send({ message: "Status and fee updated" });
+          res.send({ message: "Status, fee and feedback updated" });
         } else {
           res.status(404).send({ message: "Not found or already updated" });
         }
