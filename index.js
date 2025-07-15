@@ -332,6 +332,28 @@ async function run() {
       }
     });
 
+    app.get("/all_materials", async (req, res) => {
+      try {
+        const materials = await materialsCollection.find({}).toArray();
+        res.send(materials);
+      } catch (error) {
+        console.error("Failed to load materials:", error);
+        res.status(500).send({ message: "Failed to load materials" });
+      }
+    });
+
+    app.delete("/materials/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+
+      try {
+        const result = await materialsCollection.deleteOne(query);
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ message: "Failed to delete material" });
+      }
+    });
+
     const verifyAdmin = async (req, res, next) => {
       const email = req.decoded?.userInfo;
 
