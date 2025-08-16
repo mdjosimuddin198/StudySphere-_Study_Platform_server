@@ -9,7 +9,10 @@ const app = express();
 // https://simple-firebase-authenti-d1f36.firebaseapp.com
 app.use(
   cors({
-    origin: ["https://simple-firebase-authenti-d1f36.firebaseapp.com"],
+    origin: [
+      "https://simple-firebase-authenti-d1f36.firebaseapp.com",
+      "http://localhost:5173",
+    ],
     credentials: true,
   })
 );
@@ -217,6 +220,16 @@ async function run() {
       }
     });
 
+    // get all bookedSessionsCollectin for show this on the studyCard
+    app.get("/allbookedSessions", async (req, res) => {
+      try {
+        const allbokedSession = await bookedSessionsCollectin.find().toArray();
+        res.send(allbokedSession);
+      } catch (error) {
+        res.send("error caught", error);
+      }
+    });
+
     app.post("/reviews", async (req, res) => {
       const reviewsData = req.body;
       const result = await reviewsCollection.insertOne(reviewsData);
@@ -224,11 +237,18 @@ async function run() {
     });
 
     app.get("/reviews", async (req, res) => {
-      const sessionId = req.query.sessionId;
-      const result = await reviewsCollection
-        .find({ sessionId: sessionId })
-        .toArray();
-      res.send(result);
+      try {
+        const { sessionId } = req.query;
+        let quary = {};
+        if (sessionId) {
+          quary = { sessionId };
+        }
+        const result = await reviewsCollection.find(quary).toArray();
+        res.send(result);
+      } catch (error) {
+        console.log(error);
+        res.send("error find", error);
+      }
     });
 
     app.post("/study_session", async (req, res) => {
