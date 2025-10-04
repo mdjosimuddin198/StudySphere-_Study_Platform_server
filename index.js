@@ -9,7 +9,11 @@ const app = express();
 // https://simple-firebase-authenti-d1f36.firebaseapp.com
 app.use(
   cors({
-    origin: ["https://simple-firebase-authenti-d1f36.firebaseapp.com"],
+    origin: [
+      "https://simple-firebase-authenti-d1f36.firebaseapp.com",
+      "http://localhost:5173",
+      "https://study-sphere-study-platform.vercel.app/",
+    ],
     credentials: true,
   })
 );
