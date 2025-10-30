@@ -12,7 +12,7 @@ app.use(
     origin: [
       "https://simple-firebase-authenti-d1f36.firebaseapp.com",
       "http://localhost:5173",
-      "https://study-sphere-study-platform.vercel.app/",
+      "https://study-sphere-study-platform.vercel.app",
     ],
     credentials: true,
   })
